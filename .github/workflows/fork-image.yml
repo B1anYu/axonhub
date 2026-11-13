@@ -1,0 +1,68 @@
+# Personal fork: build the patched image and publish it to GHCR.
+#
+# Triggered by pushes to fork/** branches and by manual dispatch. Only
+# linux/amd64 is built (the deployment target), so there is no manifest job.
+name: Fork image (GHCR)
+
+on:
+  push:
+    branches:
+      - 'fork/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: fork-image-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Test llm/pipeline/cc
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: llm
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: llm/go.mod
+          cache-dependency-path: llm/go.sum
+      - run: go test ./pipeline/cc/...
+
+  build:
+    name: Build & push (linux/amd64)
+    needs: [test]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Write VERSION
+        run: printf '%s\n' "v1.0.0-beta10-fork.$(date -u +%Y%m%d%H%M)" > internal/build/VERSION
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64
+          push: true
+          tags: |
+            ghcr.io/b1anyu/axonhub:dev
+            ghcr.io/b1anyu/axonhub:sha-${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          provenance: false
+          sbom: false

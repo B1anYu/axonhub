@@ -66,7 +66,11 @@ func supportsSystemCacheCompatibility(format llm.APIFormat) bool {
 	case llm.APIFormatOpenAIChatCompletion,
 		llm.APIFormatOpenAIResponse,
 		llm.APIFormatOpenAIResponseCompact,
-		llm.APIFormatAnthropicMessage:
+		llm.APIFormatAnthropicMessage,
+		// Gemini's outbound transformer hoists every system/developer message
+		// into systemInstruction (gemini/outbound_convert.go), so a later system
+		// message rewrites the cached prefix exactly like the protocols above.
+		llm.APIFormatGeminiContents:
 		return true
 	default:
 		return false

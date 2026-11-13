@@ -18,6 +18,7 @@ func TestSystemCacheCompatibilityAffectedFormats(t *testing.T) {
 		llm.APIFormatOpenAIResponse,
 		llm.APIFormatOpenAIResponseCompact,
 		llm.APIFormatAnthropicMessage,
+		llm.APIFormatGeminiContents,
 	}
 
 	middleware := SystemCacheCompatibility()
@@ -82,7 +83,7 @@ func TestSystemCacheCompatibilityNoOpConditions(t *testing.T) {
 				{Role: "user"},
 				{Role: "system"},
 			}),
-			format: llm.APIFormatGeminiContents,
+			format: llm.APIFormatGeminiEmbedding,
 		},
 		{
 			name:    "missing raw request",
